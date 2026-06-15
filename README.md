@@ -64,7 +64,7 @@ Son 1 yıllık tarihsel veri üzerinde (n = 957 maç, modelin hiç görmediği t
 ## Kurulum
 
 ```bash
-git clone https://github.com/tugberkakbulut/wc2026-ai.git
+git clone https://github.com/Tuguberk/wc2026-ai
 cd wc2026-ai
 
 python -m venv .venv && source .venv/bin/activate
