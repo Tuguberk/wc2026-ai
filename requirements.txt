@@ -1,0 +1,7 @@
+# Streamlit Cloud deploy — sadece görüntüleme katmanı
+# make update lokal çalışır, data/outputs/ git'e push edilir
+streamlit>=1.28
+plotly>=5.17
+pandas>=2.0
+numpy>=1.24
+pyarrow>=13.0
