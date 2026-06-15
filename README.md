@@ -4,6 +4,7 @@ Dünya Kupası 2026 maçları için istatistiksel olasılık tahminleri.
 Hiyerarşik Bayesian Poisson modeli, LightGBM ve piyasa verilerinin ağırlıklı birleşimi.
 
 🔗 **[Canlı Demo →](https://wc2026-ai.streamlit.app)**
+🌐 **[Blog Yazısı](https://dev.to/tuguberk/dunya-kupasi-2026-mac-sonuclarini-ai-ile-nasil-tahmin-ettim-287p)**
 
 ---
 
@@ -18,8 +19,9 @@ Piyasa Verileri   ──┘
 ```
 
 **Pipeline:**
+
 1. Maç sonuçları football-data.org'dan çekilir
-2. 49k+ tarihsel maçla Bayesian modeli güncellenir  
+2. 49k+ tarihsel maçla Bayesian modeli güncellenir
 3. LightGBM 23 sinyalle (Elo, form, FIFA sıralaması) yeniden eğitilir
 4. Piyasa tahminleri Shin de-vig yöntemiyle arındırılır
 5. Üç model birleştirilir, isotonic regresyonla kalibre edilir
@@ -32,13 +34,13 @@ Piyasa Verileri   ──┘
 
 Son 1 yıllık tarihsel veri üzerinde (n = 957 maç, modelin hiç görmediği test seti):
 
-| Model | Brier Skoru ↓ | Doğruluk ↑ |
-|---|---|---|
-| **Birleşik Model** | **0.541** | **%55.2** |
-| Bayesian Poisson | 0.543 | %56.1 |
-| LightGBM | 0.552 | %55.8 |
-| Kıyaslama: eşit şans (⅓) | 0.667 | %33.3 |
-| Kıyaslama: hep ev sahibi | 0.648 | %44.6 |
+| Model                    | Brier Skoru ↓ | Doğruluk ↑ |
+| ------------------------ | ------------- | ---------- |
+| **Birleşik Model**       | **0.541**     | **%55.2**  |
+| Bayesian Poisson         | 0.543         | %56.1      |
+| LightGBM                 | 0.552         | %55.8      |
+| Kıyaslama: eşit şans (⅓) | 0.667         | %33.3      |
+| Kıyaslama: hep ev sahibi | 0.648         | %44.6      |
 
 > Futbolda %55+ doğruluk, büyük veri altyapılarına sahip profesyonel sistemlerle aynı aralıktadır.
 > Önemli olan doğruluktan çok **kalibrasyondur** — %70 dediğimizde gerçekten ~%70 olmalı.
@@ -47,15 +49,15 @@ Son 1 yıllık tarihsel veri üzerinde (n = 957 maç, modelin hiç görmediği t
 
 ## Kullanılan Teknolojiler
 
-| Katman | Teknoloji |
-|---|---|
-| Bayesian model | PyMC 5 — hiyerarşik Poisson, zaman-decay ağırlıkları |
-| Makine öğrenmesi | LightGBM — çok sınıflı (H/D/A), 23 özellik |
-| Özellik mühendisliği | Elo puanları, son form, FIFA dünya sıralaması (1992–2024) |
-| Kalibrasyon | Isotonic regresyon |
-| Simülasyon | Monte Carlo, 25.000 iterasyon, Wilson %95 güven aralıkları |
-| Veri kaynakları | football-data.org · Kaggle · FIFA ranking CSV |
-| Arayüz | Streamlit + Plotly |
+| Katman               | Teknoloji                                                  |
+| -------------------- | ---------------------------------------------------------- |
+| Bayesian model       | PyMC 5 — hiyerarşik Poisson, zaman-decay ağırlıkları       |
+| Makine öğrenmesi     | LightGBM — çok sınıflı (H/D/A), 23 özellik                 |
+| Özellik mühendisliği | Elo puanları, son form, FIFA dünya sıralaması (1992–2024)  |
+| Kalibrasyon          | Isotonic regresyon                                         |
+| Simülasyon           | Monte Carlo, 25.000 iterasyon, Wilson %95 güven aralıkları |
+| Veri kaynakları      | football-data.org · Kaggle · FIFA ranking CSV              |
+| Arayüz               | Streamlit + Plotly                                         |
 
 ---
 
@@ -84,6 +86,7 @@ make update
 ```
 
 Her çalıştırmada şunlar olur:
+
 - Yeni maç sonuçları çekilir
 - Model verileri güncellenerek yeniden eğitilir
 - Kalibre edilmiş tahminler üretilir
@@ -138,14 +141,14 @@ wc2026-ai/
 
 `.env.example` dosyasını kopyalayarak `.env` oluştur:
 
-| Değişken | Zorunlu | Açıklama |
-|---|---|---|
-| `FOOTBALL_DATA_API_KEY` | Evet | WC2026 fikstür + sonuçları |
-| `KAGGLE_USERNAME` + `KAGGLE_KEY` | Önerilen | Tarihsel maç verisi (GitHub fallback var) |
-| `API_FOOTBALL_KEY` | Opsiyonel | Yedek fikstür kaynağı |
-| `ODDS_API_KEY` | Opsiyonel | Piyasa tahmin verileri (the-odds-api.com) |
-| `MCMC_DRAWS` | Opsiyonel | Varsayılan 1000 |
-| `MONTE_CARLO_ITERATIONS` | Opsiyonel | Varsayılan 10000 |
+| Değişken                         | Zorunlu   | Açıklama                                  |
+| -------------------------------- | --------- | ----------------------------------------- |
+| `FOOTBALL_DATA_API_KEY`          | Evet      | WC2026 fikstür + sonuçları                |
+| `KAGGLE_USERNAME` + `KAGGLE_KEY` | Önerilen  | Tarihsel maç verisi (GitHub fallback var) |
+| `API_FOOTBALL_KEY`               | Opsiyonel | Yedek fikstür kaynağı                     |
+| `ODDS_API_KEY`                   | Opsiyonel | Piyasa tahmin verileri (the-odds-api.com) |
+| `MCMC_DRAWS`                     | Opsiyonel | Varsayılan 1000                           |
+| `MONTE_CARLO_ITERATIONS`         | Opsiyonel | Varsayılan 10000                          |
 
 ---
 
@@ -166,4 +169,4 @@ make lint   # ruff
 
 ---
 
-*Turnuva boyunca aktif olarak güncellenmektedir — son güncelleme `data/outputs/` commit tarihine bakınız.*
+_Turnuva boyunca aktif olarak güncellenmektedir — son güncelleme `data/outputs/` commit tarihine bakınız._
