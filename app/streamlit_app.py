@@ -1124,13 +1124,13 @@ def main() -> None:
     kalibrasyon_kayit   = load_calib_records()
     bracket             = load_bracket_results()
 
-    sekmeler = st.tabs(["🏆  Şampiyonluk", "🇹🇷  Türkiye", "📅  Tüm Maçlar", "🔬  Nasıl Çalışır"])
+    sekmeler = st.tabs(["🇹🇷  Türkiye", "🏆  Şampiyonluk", "📅  Tüm Maçlar", "🔬  Nasıl Çalışır"])
 
     with sekmeler[0]:
-        sekme_sampiyonluk(bracket)
+        sekme_turkiye(calib, turkiye_yolu, zaman_serisi, tahminler, bracket)
 
     with sekmeler[1]:
-        sekme_turkiye(calib, turkiye_yolu, zaman_serisi, tahminler, bracket)
+        sekme_sampiyonluk(bracket)
 
     with sekmeler[2]:
         sekme_maclar(tahminler, fikstür)

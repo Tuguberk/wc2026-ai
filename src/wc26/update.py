@@ -497,7 +497,11 @@ def score_past_predictions(
     if fixtures is None:
         return None
 
-    results = fixtures[fixtures["status"] == "FINISHED"]
+    results = fixtures[
+        (fixtures["status"] == "FINISHED")
+        & fixtures["home_score"].notna()
+        & fixtures["away_score"].notna()
+    ]
     if results.empty:
         return None
 

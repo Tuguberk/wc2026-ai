@@ -2,6 +2,9 @@
 
 Dünya Kupası 2026 maçları için istatistiksel olasılık tahminleri.  
 Hiyerarşik Bayesian Poisson modeli, LightGBM ve piyasa verilerinin ağırlıklı birleşimi.
+
+🔗 **[Canlı Demo →](https://wc2026-ai.streamlit.app)**
+
 ---
 
 ## Nasıl Çalışır?

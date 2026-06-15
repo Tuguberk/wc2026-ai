@@ -386,7 +386,11 @@ def extract_played_by_group(
 
     Returns {group_letter: {(home_team, away_team): (home_score, away_score)}}.
     """
-    finished = fixtures[fixtures["status"] == "FINISHED"]
+    finished = fixtures[
+        (fixtures["status"] == "FINISHED")
+        & fixtures["home_score"].notna()
+        & fixtures["away_score"].notna()
+    ]
     result: dict[str, dict[tuple[str, str], tuple[int, int]]] = {}
 
     for grp, teams in all_groups.items():
