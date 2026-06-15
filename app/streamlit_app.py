@@ -256,21 +256,11 @@ def load_bracket_results() -> pd.DataFrame | None:
     p = OUTPUTS / "bracket_results.parquet"
     return pd.read_parquet(p) if p.exists() else None
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def load_calib_records() -> pd.DataFrame | None:
-    snaps_dir = PROJECT_ROOT / "data" / "snapshots"
-    if not snaps_dir.exists():
-        return None
-    frames = [
-        pd.read_parquet(snap / "calibration.parquet")
-        for snap in sorted(snaps_dir.iterdir())
-        if (snap / "calibration.parquet").exists()
-    ]
-    if not frames:
-        return None
-    combined = pd.concat(frames, ignore_index=True)
-    # Her maç için en erken snapshot'ı tut (yinelenen satırları kaldır)
-    return combined.sort_values("snapshot_ts").drop_duplicates(subset=["match_id"]).reset_index(drop=True)
+    # update.py her çalıştırmada bunu yazar — snapshots taramamaya gerek yok
+    p = OUTPUTS / "calibration_records.parquet"
+    return pd.read_parquet(p) if p.exists() else None
 
 
 # ── HTML yardımcıları ─────────────────────────────────────────────────────────
@@ -669,9 +659,10 @@ def sekme_turkiye(
             and zaman_serisi["turkey_advance"].notna().sum() > 1):
         bolum("Türkiye'nin görünümü zaman içinde nasıl değişti?")
         not_kutusu("Her nokta bir model güncellemesidir. Maç sonuçları geldikçe olasılıklar güncellenir.")
+        ts_clean = zaman_serisi.dropna(subset=["turkey_advance"])
         fig2 = go.Figure(go.Scatter(
-            x=zaman_serisi["snapshot_ts"],
-            y=zaman_serisi["turkey_advance"] * 100,
+            x=ts_clean["snapshot_ts"],
+            y=ts_clean["turkey_advance"] * 100,
             mode="lines+markers",
             line=dict(color=C_AMBER, width=2),
             marker=dict(size=7, color=C_AMBER),

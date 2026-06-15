@@ -694,6 +694,8 @@ def update_outputs(
     if calibration is not None and not calibration.empty:
         calib_data["mean_brier"] = float(calibration["brier_score"].mean())
         calib_data["n_matches"] = int(len(calibration))
+        # Kümülatif kalibrasyon kayıtlarını outputs'a yaz — app buradan okur
+        calibration.to_parquet(out_dir / "calibration_records.parquet", index=False)
     (out_dir / "calibration_latest.json").write_text(json.dumps(calib_data, indent=2, default=str))
 
     group_d_results = sim_results.get("group_d_results")
