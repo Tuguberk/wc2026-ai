@@ -676,16 +676,42 @@ def sekme_turkiye(
 
 # ── Sekme 3: Tüm Maçlar ──────────────────────────────────────────────────────
 
-def sekme_maclar(tahminler: pd.DataFrame | None, fikstür: pd.DataFrame | None) -> None:
-    if tahminler is None or tahminler.empty:
+def sekme_maclar(
+    tahminler: pd.DataFrame | None,
+    fikstür: pd.DataFrame | None,
+    calib_records: pd.DataFrame | None = None,
+) -> None:
+    if fikstür is None or fikstür.empty:
+        st.info("Fikstür verisi bulunamadı. `make update` çalıştırın.")
+        return
+
+    # Tahminleri birleştir: yaklaşan maçlar tahminler'den, biten maçlar calib_records'tan
+    pred_frames = []
+    if tahminler is not None and not tahminler.empty:
+        pred_cols = [c for c in ["match_id", "p_home", "p_draw", "p_away",
+                                   "exp_home_goals", "exp_away_goals"]
+                     if c in tahminler.columns]
+        pred_frames.append(tahminler[pred_cols])
+    if calib_records is not None and not calib_records.empty:
+        calib_cols = [c for c in ["match_id", "p_home", "p_draw", "p_away"]
+                      if c in calib_records.columns]
+        pred_frames.append(calib_records[calib_cols])
+
+    if not pred_frames:
         st.info("Henüz tahmin bulunmuyor. `make update` çalıştırın.")
         return
 
-    df = tahminler.copy()
-    if fikstür is not None and not fikstür.empty:
-        fix = fikstür[["match_id", "date", "stage", "group", "status",
-                        "home_score", "away_score"]].copy()
-        df = df.merge(fix, on="match_id", how="left")
+    all_preds = (pd.concat(pred_frames, ignore_index=True)
+                   .drop_duplicates("match_id", keep="first"))
+
+    # Fikstür'ü baz al, tahminleri sol birleştir; tahmin olmayan maçları gösterme
+    df = fikstür.copy()
+    df = df.merge(all_preds, on="match_id", how="left")
+    df = df.dropna(subset=["p_home"])
+
+    if df.empty:
+        st.info("Henüz tahmin bulunmuyor. `make update` çalıştırın.")
+        return
 
     df = df.sort_values("date") if "date" in df.columns else df
 
@@ -730,9 +756,13 @@ def sekme_maclar(tahminler: pd.DataFrame | None, fikstür: pd.DataFrame | None) 
         favori = ev if ph > max(pd_, pa) else (None if pd_ > max(ph, pa) else dep)
         fav_p  = max(ph, pd_, pa)
 
+        hs_raw = satir.get("home_score")
+        as_raw = satir.get("away_score")
+        if durum == "FINISHED" and (pd.isna(hs_raw) or pd.isna(as_raw)):
+            durum = "SCHEDULED"  # skor henüz gelmemiş
         if durum == "FINISHED":
-            hs  = int(satir.get("home_score", 0))
-            as_ = int(satir.get("away_score", 0))
+            hs  = int(hs_raw)
+            as_ = int(as_raw)
             gercek = ("Ev kazandı" if hs > as_
                       else ("Beraberlik" if hs == as_ else "Deplasman kazandı"))
             dogru  = model_tahmini.split()[0] in gercek
@@ -1124,7 +1154,7 @@ def main() -> None:
         sekme_sampiyonluk(bracket)
 
     with sekmeler[2]:
-        sekme_maclar(tahminler, fikstür)
+        sekme_maclar(tahminler, fikstür, kalibrasyon_kayit)
 
     with sekmeler[3]:
         sekme_teknik(model_metrikleri, onem_sirasi, kalibrasyon_kayit, bracket)

@@ -1,6 +1,6 @@
 # WC 2026 Maç Sonuçlarını AI ile Nasıl Tahmin Ettim?
 
-Geçen dönem Probability & Statistics dersini alırken aklımda sürekli şu soru vardı: *"Bunları gerçek hayatta nasıl kullanacağım?"* Formüller anlamlıydı, sınavlar güzeldi ama uygulaması nerede?
+Geçen dönem Probability & Statistics dersini alırken aklımda sürekli şu soru vardı: _"Bunları gerçek hayatta nasıl kullanacağım?"_ Formüller anlamlıydı, sınavlar güzeldi ama uygulaması nerede?
 
 Cevap beklenmedik bir yerden geldi: Dünya Kupası 2026.
 
@@ -18,7 +18,6 @@ Futbol tahmin etmek kulağa kolay gelir. Ama şunu düşünün:
 - Favoriler her zaman kazanmıyor. Tarihsel veriye bakarsanız **ev sahibi takımlar ancak %45 oranında** kazanıyor.
 - 90 dakikada tek bir hata maçı değiştirebilir.
 
-![Futbol maç istatistikleri](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Football_in_Bloomington%2C_Indiana%2C_1995.jpg/320px-Football_in_Bloomington%2C_Indiana%2C_1995.jpg)
 
 Akademisyenler bunu "düşük sinyalli yüksek gürültülü ortam" olarak tanımlar. Hava durumu tahmini ya da hisse senedi tahmininden bile zordur, çünkü insan faktörü (motivasyon, formun o günkü hali, taktik tercih) ölçülmesi neredeyse imkânsız değişkenler içerir.
 
@@ -30,7 +29,7 @@ Cevap: Dünyanın en iyi sistemleri **%55-58** doğruluk elde ediyor. Bu bizim h
 
 ## Neden LLM Kullanmadım?
 
-İlk düşünce herkesin düşündüğü şey: *"ChatGPT'ye sorarım, o tahmin eder."*
+İlk düşünce herkesin düşündüğü şey: _"ChatGPT'ye sorarım, o tahmin eder."_
 
 Denedim. Claude'a "Türkiye - ABD maçında kim kazanır, olasılık ver" dedim. Cevap geldi: "%40 Türkiye favori."
 
@@ -88,7 +87,11 @@ Her katmanı sırayla anlatalım.
 
 Gol sayısı ayrık (0, 1, 2, 3...) ve nadiren büyük değerler alıyor. Bu tam Poisson dağılımının tanımı:
 
-$$P(X = k) = \frac{\lambda^k e^{-\lambda}}{k!}$$
+```
+         λᵏ · e⁻λ
+P(X=k) = ─────────     (k = 0, 1, 2, ...)
+              k!
+```
 
 Ama hangi lambda? İşte burada Bayesian modeli devreye giriyor.
 
@@ -126,7 +129,18 @@ weight = exp(-log(2) * days_ago / 730)
 
 Bu exponential decay, fizikteki radyoaktif bozunma formülüyle aynı. Derste öğrendiğimiz bir şeyi burada görebiliyorum,güzel bir detay.
 
-![Bayesian model şeması](https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Bayes%27_Theorem_MMB_01.jpg/320px-Bayes%27_Theorem_MMB_01.jpg)
+```
+┌──────────────────────────────────────────────────────────────┐
+│                      Bayes Teoremi                           │
+│                                                              │
+│      P(θ | X)   =   P(X | θ)  ×  P(θ)  /  P(X)            │
+│                                                              │
+│  P(θ | X)  ← Posterior   "Veriyi gördükten sonra inanç"    │
+│  P(X | θ)  ← Likelihood  "Veri modelle ne kadar uyuyor?"   │
+│  P(θ)      ← Prior       "Veri öncesi ön bilgi"            │
+│  P(X)      ← Evidence    "Normalleştirme sabiti"           │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Neden Bayesian, Frekantist Değil?
 
@@ -151,25 +165,25 @@ with pm.Model() as football_model:
     # Hyperpriors
     mu_att  = pm.Normal("mu_att", mu=0, sigma=1)
     sigma_att = pm.HalfNormal("sigma_att", sigma=1)
-    
+
     # Team-level attack and defense
     attack  = pm.Normal("attack",  mu=mu_att,  sigma=sigma_att, shape=n_teams)
     defense = pm.Normal("defense", mu=0, sigma=1, shape=n_teams)
-    
+
     # Home advantage
     home_adv = pm.Normal("home_adv", mu=0.3, sigma=0.2)
     intercept = pm.Normal("intercept", mu=0, sigma=1)
-    
+
     # Expected goals
     log_lambda_home = intercept + home_adv * (1 - neutral) + attack[home_idx] - defense[away_idx]
     log_lambda_away = intercept + attack[away_idx] - defense[home_idx]
-    
+
     # Likelihood (weighted)
     home_goals = pm.Poisson("home_goals", mu=pm.math.exp(log_lambda_home),
                              observed=home_goals_obs)
     away_goals = pm.Poisson("away_goals", mu=pm.math.exp(log_lambda_away),
                              observed=away_goals_obs)
-    
+
     # MCMC sampling
     trace = pm.sample(draws=1000, tune=500, chains=2, target_accept=0.9)
 ```
@@ -233,13 +247,13 @@ def fifa_rank_at(lookup: dict, team: str, date: datetime) -> tuple[float, float]
     """Maç tarihindeki FIFA sıralamasını döndür (leakage-free)."""
     if team not in lookup:
         return 150.0, 0.0  # bilinmeyen takım → konservatif fallback
-    
+
     ts = lookup[team]  # takımın tüm sıralama geçmişi
     past = ts[ts["date"] <= date]
-    
+
     if past.empty:
         return 150.0, 0.0
-    
+
     row = past.iloc[-1]  # maç tarihinden önceki en son sıralama
     return float(row["rank"]), float(row["points"])
 ```
@@ -294,7 +308,27 @@ model.fit(
 
 **Kalibrasyon testi:** Modelin %70 dediği maçlarda, takım gerçekten %70 kez kazanıyor mu?
 
-![Kalibrasyon diyagramı açıklaması](https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Calibration_curve.svg/400px-Calibration_curve.svg.png)
+```
+Kalibrasyon Diyagramı — "Tahmin ettiğimde ne kadar doğruyum?"
+
+Gerçek
+Oran  │
+ 1.0  │                              ╱ ← Mükemmel Kalibrasyon (hedef)
+      │                          ╱
+ 0.8  │            ╱─────────╯       ← Aşırı Güvenli (over-confident)
+      │        ╱──╯
+ 0.6  │    ╱──╯    ╲──╮
+      │  ╱╯           ╲──╮          ← Yetersiz Güvenli (under-confident)
+ 0.4  │╱                 ╲──────╮
+      │                          ╲──╮
+ 0.2  │
+      │
+  0   └────┬────┬────┬────┬────┬──── Tahmin Edilen Oran
+           0.2  0.4  0.6  0.8  1.0
+
+Mükemmel kalibrasyon = köşegen çizgi.
+Isotonic Regresyon bu eğriyi köşegene yaklaştırır.
+```
 
 Çoğu model bu testte başarısız olur. Özellikle tree-based modeller sistematik olarak aşırı güvenir (over-confident).
 
@@ -315,6 +349,7 @@ for outcome, col in [("H", "p_home"), ("D", "p_draw"), ("A", "p_away")]:
 Isotonic regresyon monoton (düz artan) bir dönüşüm uygular. Model %70 diyorsa ama gerçekte %65 oluyor, bunu %65'e çeker. Basit ama etkili.
 
 **Önce/Sonra Brier skoru:**
+
 - Kalibrasyonsuz: 0.561
 - Kalibrasyonlu: 0.538
 
@@ -327,20 +362,20 @@ Artık her maç için kalibre olasılıklar var. 25.000 kez turnuvayı baştan s
 ```python
 def simulate_full_tournament(all_groups, played, model, n=25_000):
     reach = {}  # her takım için kaç kez hangi aşamaya geldi
-    
+
     for _ in range(n):
         # 1. Grup aşamasını simüle et
         group_results = {}
         for grp, teams in all_groups.items():
             group_results[grp] = simulate_group(teams, played[grp], model)
-        
+
         # 2. İlk 2 + en iyi 8 üçüncüyü belirle
         qualifiers = determine_qualifiers(group_results)
-        
+
         # 3. Eleme turlarını simüle et
         bracket = seed_bracket(qualifiers)
         simulate_knockouts(bracket, model, reach)
-    
+
     # Olasılık = kaç kez ulaştı / toplam simülasyon
     return {team: counts / n for team, counts in reach.items()}
 ```
@@ -373,13 +408,13 @@ Normal approximation (ders kitabındaki yöntem) burada işe yaramaz çünkü or
 
 ## Sonuçlar: Dürüst Bir Değerlendirme
 
-| Model | Brier Skoru ↓ | Doğruluk ↑ |
-|---|---|---|
-| **Birleşik Model** | **0.541** | **%55.2** |
-| Bayesian Poisson | 0.543 | %56.1 |
-| LightGBM | 0.552 | %55.8 |
-| Kıyaslama: eşit şans | 0.667 | %33.3 |
-| Kıyaslama: hep ev sahibi | 0.648 | %44.6 |
+| Model                    | Brier Skoru ↓ | Doğruluk ↑ |
+| ------------------------ | ------------- | ---------- |
+| **Birleşik Model**       | **0.541**     | **%55.2**  |
+| Bayesian Poisson         | 0.543         | %56.1      |
+| LightGBM                 | 0.552         | %55.8      |
+| Kıyaslama: eşit şans     | 0.667         | %33.3      |
+| Kıyaslama: hep ev sahibi | 0.648         | %44.6      |
 
 **Brier skoru nedir?** Tahmin vektörü ile gerçek vektör arasındaki ortalama karesel hata. 0 mükemmel, 0.667 tamamen rastgele.
 
@@ -387,7 +422,7 @@ Modelimiz rastgeleden %19 daha iyi. "Hep ev sahibi kazanır" de ki naif strateji
 
 %55 doğruluk ilk bakışta düşük görünebilir. Ama şunu düşünün:
 
-> *Dünyanın en büyük organizasyonları, milyarlarca veri noktası ve yüzlerce analist ile bu işe giren sistemler bile %57'nin üzerine nadiren çıkıyor.*
+> _Dünyanın en büyük organizasyonları, milyarlarca veri noktası ve yüzlerce analist ile bu işe giren sistemler bile %57'nin üzerine nadiren çıkıyor._
 
 Futbol bu. Rastgelelik bu sporun özünde var. Modelimizin değeri kesin kazananı bulmak değil, **olasılıkları doğru kalibre etmek.**
 
@@ -395,13 +430,13 @@ Futbol bu. Rastgelelik bu sporun özünde var. Modelimizin değeri kesin kazanan
 
 WC2026 başladığında (15 Haziran 2026 itibarıyla) modelimizin hesapları:
 
-| Aşama | Olasılık |
-|---|---|
-| Grup aşamasından çıkma | %33 |
-| Son 16 | %10 |
-| Çeyrek Final | %2.6 |
-| Yarı Final | %0.7 |
-| Şampiyon | %0.05 |
+| Aşama                  | Olasılık |
+| ---------------------- | -------- |
+| Grup aşamasından çıkma | %33      |
+| Son 16                 | %10      |
+| Çeyrek Final           | %2.6     |
+| Yarı Final             | %0.7     |
+| Şampiyon               | %0.05    |
 
 Türkiye Grup D'de (Paraguay, Avustralya, ABD ile) %1 ihtimalle birinci, %9 ihtimalle ikinci bitirebilir. Ama %46 ihtimalle üçüncü bitirecek ve bu grubun en iyi üçüncüsü olursa yine tutarlı. Toplam eleme şansı: **%33**.
 
@@ -455,6 +490,7 @@ Tüm kaynak kodu GitHub'da açık:
 
 Canlı demo:  
 **[wc2026-ai.streamlit.app](https://wc2026-ai.streamlit.app)**
+
 ---
 
 ## Sıradaki Adım: LLM Hibrit Mimarisi
@@ -462,7 +498,6 @@ Canlı demo:
 Bu sistem iyi çalışıyor ama kritik bir eksik var: **sakatlık ve kadro bilgisi yok.**
 
 Maç öncesi "Çalhanoğlu yok" haberi modeli tamamen değiştirmeli. Bunu istatistiksel modelle yapamazsın, yapısal olmayan metinden bilgi çıkarman lazım.
-
 
 İstatistiksel backbone kalır (kalibre, tekrarlanabilir, açıklanabilir).  
 LLM agent yapısal olmayan dünyayı sayıya dönüştürür.  
@@ -472,16 +507,16 @@ LLM agent yapısal olmayan dünyayı sayıya dönüştürür.
 
 ## Kaynaklar
 
-- **Dixon & Coles (1997)** — *Modelling Association Football Scores and Inefficiencies in the Football Betting Market* — bu alanın klasiği, temel formülasyonu buradan aldım
-- **Maher (1982)** — *Modelling Association Football Scores* — Poisson bağımsızlık varsayımının kökeni
-- **Karlis & Ntzoufras (2003)** — *Analysis of sports data by using bivariate Poisson models* — çift Poisson modeli
-- **Wilson (1927)** — *Probable inference, the law of succession, and statistical inference* — Wilson CI'nın orijinal makalesi
-- **Gelman et al.** — *Bayesian Data Analysis* — Bayesian düşüncenin İncil'i
+- **Dixon & Coles (1997)** — _Modelling Association Football Scores and Inefficiencies in the Football Betting Market_ — bu alanın klasiği, temel formülasyonu buradan aldım
+- **Maher (1982)** — _Modelling Association Football Scores_ — Poisson bağımsızlık varsayımının kökeni
+- **Karlis & Ntzoufras (2003)** — _Analysis of sports data by using bivariate Poisson models_ — çift Poisson modeli
+- **Wilson (1927)** — _Probable inference, the law of succession, and statistical inference_ — Wilson CI'nın orijinal makalesi
+- **Gelman et al.** — _Bayesian Data Analysis_ — Bayesian düşüncenin İncil'i
 - PyMC documentation — [docs.pymc.io](https://docs.pymc.io)
 - LightGBM paper — Ke et al., NeurIPS 2017
 
 ---
 
-*Bu projeyi WC2026 boyunca aktif olarak güncellemeye çalışacağım. Her maçtan sonra `make update` → `git push` → Streamlit otomatik güncelleniyor. 
+\*Bu projeyi WC2026 boyunca aktif olarak güncellemeye çalışacağım. Her maçtan sonra `make update` → `git push` → Streamlit otomatik güncelleniyor.
 
-*Sorularınız veya önerileriniz için yorumları kullanabilirsiniz.*
+_Sorularınız veya önerileriniz için yorumları kullanabilirsiniz._
