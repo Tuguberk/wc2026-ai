@@ -1,19 +1,19 @@
 {
   "turkey_probs": {
-    "p_advance": 0.0969,
-    "p_1st": 0.012,
-    "p_2nd": 0.0849,
-    "p_3rd": 0.4622,
-    "p_4th": 0.4409,
-    "avg_points": 2.2171,
-    "avg_gd": -2.787,
-    "p_advance_full": 0.32912,
-    "round_of_16": 0.09664,
-    "quarter_final": 0.02664,
-    "semi_final": 0.0072,
-    "final": 0.00136,
-    "champion": 0.0004
+    "p_advance": 0.0,
+    "p_1st": 0.0,
+    "p_2nd": 0.0,
+    "p_3rd": 0.1046,
+    "p_4th": 0.8954,
+    "avg_points": 0.7916,
+    "avg_gd": -3.8743,
+    "p_advance_full": 0.07732,
+    "round_of_16": 0.02304,
+    "quarter_final": 0.0058,
+    "semi_final": 0.00116,
+    "final": 0.0004,
+    "champion": 8e-05
   },
-  "mean_brier": 0.5674732669970415,
-  "n_matches": 4
+  "mean_brier": 0.6007497930812217,
+  "n_matches": 24
 }
